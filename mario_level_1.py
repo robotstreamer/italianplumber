@@ -6,6 +6,11 @@ This is an attempt to recreate the first level of
 Super Mario Bros for the NES.
 """
 
+import os
+os.chdir("C:\\Users\\rgiul\\Mario-Level-1")
+print "hello"
+
+
 import sys
 import pygame as pg
 from data.main import main
