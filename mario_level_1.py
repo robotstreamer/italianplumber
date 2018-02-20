@@ -8,7 +8,7 @@ Super Mario Bros for the NES.
 
 import os
 os.chdir("C:\\Users\\rgiul\\Mario-Level-1")
-print "hello"
+print("hello")
 
 
 import sys

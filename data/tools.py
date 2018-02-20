@@ -4,14 +4,20 @@ import os
 import pygame as pg
 import random
 from threading import Thread
-import thread
+import _thread
 from time import sleep
 import traceback
 import time
-import urllib2
+from urllib.request import urlopen
+#import urllib2
+import urllib
 import json
-from socketIO_client import SocketIO, LoggingNamespace
+#from socketIO_client import SocketIO, LoggingNamespace
 import uuid
+import asyncio
+import websockets
+
+
 
 
 keybinding = {
@@ -29,23 +35,60 @@ keybinding = {
 infoServer = 'robotstreamer.com:6001'
 robotID = '103'
 
+
+def startControl():
+    print("waiting a few seconds")
+    time.sleep(7) #todo: only wait as needed (wait for interent)
+    print("restarting loop")
+    time.sleep(0.25)
+    try:
+        asyncio.new_event_loop().run_until_complete(handleControlMessages())
+    except:
+        print("error")
+        traceback.print_exc()
+
+
+async def handleControlMessages():
+
+    controlHost = "robotstreamer.com"
+    port = getControlHostPort()['port']
+    print("connecting to port:", port)
+    url = 'ws://%s:%s/echo' % (controlHost, port)
+
+    async with websockets.connect(url) as websocket:
+
+        print("connected to control service at", url)
+        print("control websocket object:", websocket)
+        
+        while True:
+
+            print("awaiting control message")
+            
+            message = await websocket.recv()
+            print("< {}".format(message))
+            j = json.loads(message)
+            print(j)
+            _thread.start_new_thread(handle_command, (j,))
+        
+        
+
 def getWithRetry(url):
 
     for retryNumber in range(2000):
         try:
-            print "GET", url
-            response = urllib2.urlopen(url).read()
+            print("GET", url)
+            response = urlopen(url).read()
             break
         except:
-            print "could not open url", url
+            print("could not open url", url)
             traceback.print_exc()
             time.sleep(2)
 
     return response
 
 
-def identifyRobotId():
-    chatSocketIO.emit('identify_robot_id', robotID);
+##def identifyRobotId():
+##    chatSocketIO.emit('identify_robot_id', robotID);
    
     
 
@@ -75,67 +118,117 @@ chatHostPort = getChatHostPort()
 #chatHostPort = {'host':'https://runmyrobot.com', 'port':8000}
 
 
-print "connecting to control socket.io", controlHostPort
-controlSocketIO = SocketIO(controlHostPort['host'], controlHostPort['port'], LoggingNamespace)
-print "finished using socket io to connect to control host port", controlHostPort
+##print "connecting to control socket.io", controlHostPort
+##controlSocketIO = SocketIO(controlHostPort['host'], controlHostPort['port'], LoggingNamespace)
+##print "finished using socket io to connect to control host port", controlHostPort
 
 
-print "connecting to chat socket.io", chatHostPort
-chatSocketIO = SocketIO(chatHostPort['host'], chatHostPort['port'], LoggingNamespace)
-print "finished using socket io to chat control host port", chatHostPort
+##print "connecting to chat socket.io", chatHostPort
+##chatSocketIO = SocketIO(chatHostPort['host'], chatHostPort['port'], LoggingNamespace)
+##print "finished using socket io to chat control host port", chatHostPort
 
 
 #identifyRobotId()
 
 
-def handle_chat_message(args):
+# def handle_chat_message(args):
 
-    print "chat message received:", args
-    rawMessage = args['message']
-    withoutName = rawMessage.split(']')[1:]
-    message = "".join(withoutName)
-    urlRegExp = "(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?"
-    if message[1] == ".":
-       exit()
-    #elif commandArgs.anon_tts != True and args['anonymous'] == True:
-    #   exit()   
-    #elif commandArgs.filter_url_tts == True and re.search(urlRegExp, message):
-    #   exit()
-    else:
-        filename = 'temp_tts_' + str(uuid.uuid4())
-        f = open('c:\\temp\\' + filename, 'w')
-        f.write(message)
-        f.close()
-        os.system('cscript "C:\\Program Files\\Jampal\\ptts.vbs" -v 30 < c:\\temp\\' + filename)
-        os.unlink('c:\\temp\\' + filename)
+    # print "chat message received:", args
+    # rawMessage = args['message']
+    # withoutName = rawMessage.split(']')[1:]
+    # message = "".join(withoutName)
+    # urlRegExp = "(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?"
+    # if message[1] == ".":
+       # exit()
+    # #elif commandArgs.anon_tts != True and args['anonymous'] == True:
+    # #   exit()   
+    # #elif commandArgs.filter_url_tts == True and re.search(urlRegExp, message):
+    # #   exit()
+    # else:
+        # filename = 'temp_tts_' + str(uuid.uuid4())
+        # f = open('c:\\temp\\' + filename, 'w')
+        # f.write(message)
+        # f.close()
+        # os.system('cscript "C:\\Program Files\\Jampal\\ptts.vbs" -v 30 < c:\\temp\\' + filename)
+        # os.unlink('c:\\temp\\' + filename)
 
-def on_handle_chat_message(*args):
-   thread.start_new_thread(handle_chat_message, args)
+##def on_handle_chat_message(*args):
+##   thread.start_new_thread(handle_chat_message, args)
           
 
 
 
-def on_handle_command(*args):
-    thread.start_new_thread(handle_command, args)
+##def on_handle_command(*args):
+##    thread.start_new_thread(handle_command, args)
 
-controlSocketIO.on('command_to_robot', on_handle_command)
+##controlSocketIO.on('command_to_robot', on_handle_command)
 
-def gotChatConnection():
-    print "got connection for chat"
-    identifyRobotId()
+##def gotChatConnection():
+##    print "got connection for chat"
+##    identifyRobotId()
  
-chatSocketIO.on('connect', gotChatConnection)
-chatSocketIO.on('chat_message_with_name', on_handle_chat_message)
+##chatSocketIO.on('connect', gotChatConnection)
+##chatSocketIO.on('chat_message_with_name', on_handle_chat_message)
 #chatSocketIO.on('chat_message_with_name', x)
 
     
+# def handle_command(args):
+    # #print "received", args
+    # if 'robot_id' in args and args['robot_id'] == robotID:
+        # print "received message:", args
+        # ##print globalControl
+        # ##for c in globalControl:
+        # ##    print "FAKE KEY", c.fakeKey
+
+        # if args['command'] == 'L':
+            # if args['key_position'] == 'down':
+                # for c in globalControl:
+                    # c.fakeKey = 276
+                # pg.event.post(pg.event.Event(pg.KEYDOWN, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+
+            # if args['key_position'] == 'up':
+                # for c in globalControl:
+                    # c.fakeKey = 276
+                # pg.event.post(pg.event.Event(pg.KEYUP, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+
+                
+        # if args['command'] == 'R':
+            # if args['key_position'] == 'down':
+                # for c in globalControl:
+                    # c.fakeKey = 275
+                # pg.event.post(pg.event.Event(pg.KEYDOWN, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+
+            # if args['key_position'] == 'up':
+                # for c in globalControl:
+                    # c.fakeKey = 275
+                # pg.event.post(pg.event.Event(pg.KEYUP, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+                
+                
+                
+        # if args['command'] == 'F':
+            # if args['key_position'] == 'down':
+                # for c in globalControl:
+                    # c.fakeKey = 97
+                # pg.event.post(pg.event.Event(pg.KEYDOWN, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+
+            # if args['key_position'] == 'up':
+                # for c in globalControl:
+                    # c.fakeKey = 97
+                # pg.event.post(pg.event.Event(pg.KEYUP, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+
+                
+        # # no used for robotstreamer        
+        # if args['command'] == 'stop':
+            # print "UP"
+            # for c in globalControl:
+                # c.fakeKey = None
+            # pg.event.post(pg.event.Event(pg.KEYUP, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
+
 def handle_command(args):
-    #print "received", args
-    if 'robot_id' in args and args['robot_id'] == robotID:
-        print "received message:", args
-        print globalControl
-        for c in globalControl:
-            print "FAKE KEY", c.fakeKey
+        print("received message:", args)
+        ##print globalControl
+        ##for c in globalControl:
+        ##    print "FAKE KEY", c.fakeKey
 
         if args['command'] == 'L':
             if args['key_position'] == 'down':
@@ -176,12 +269,12 @@ def handle_command(args):
                 
         # no used for robotstreamer        
         if args['command'] == 'stop':
-            print "UP"
+            print("UP")
             for c in globalControl:
                 c.fakeKey = None
             pg.event.post(pg.event.Event(pg.KEYUP, {'scancode':30, 'key':97, 'unicode':u'a', 'mod':0}))
 
-    
+        
     
 def pressKeys(control):
     while False:
@@ -195,15 +288,15 @@ def pressKeys(control):
         sleep(0.5)
 
 
-def waitForControlServer():
-    while True:
-        print "control waiting"
-        controlSocketIO.wait(seconds=1)        
+##def waitForControlServer():
+##    while True:
+##        print "control waiting"
+##        controlSocketIO.wait(seconds=10)        
 
-def waitForChatServer():
-    while True:
-        print "chat waiting"
-        chatSocketIO.wait(seconds=1)        
+##def waitForChatServer():
+##    while True:
+##        print "chat waiting"
+##        chatSocketIO.wait(seconds=10)        
         
         
     
@@ -230,11 +323,14 @@ class Control(object):
         #thread.start()
         #thread = Thread(target = waitForControlServer, args = ())
         #thread.start()
-        thread.start_new_thread(waitForControlServer, ())
-        thread.start_new_thread(waitForChatServer, ())
+        #thread.start_new_thread(waitForControlServer, ())
+        #thread.start_new_thread(waitForChatServer, ())
         #thread.join()
         #thread.start_new_thread(pressKeys, (self,))
 
+        _thread.start_new_thread(startControl, ())
+        
+        
         globalControl.append(self)
 
 
@@ -269,19 +365,19 @@ class Control(object):
                 #lst[275] = random.randint(0, 1)
                 if self.fakeKey is not None:
                     lst[self.fakeKey] = 1
-                for i, value in enumerate(self.keys):
-                    if value != 0:
-                        print i, value
+                ##for i, value in enumerate(self.keys):
+                ##   if value != 0:
+                ##        print i, value
                 #self.keys = pg.key.get_pressed()
                 self.keys = lst
                 self.toggle_show_fps(event.key)
                 #self.toggle_show_fps(275)
-                print  "EVENT", event
-                print "key down", self.count, "self.keys", self.keys
+                ##print  "EVENT", event
+                ##print "key down", self.count, "self.keys", self.keys
             elif event.type == pg.KEYUP:
                 self.keys = pg.key.get_pressed()
-                print  "EVENT", event
-                print "key up", self.count, "self.keys", self.keys
+                ##print  "EVENT", event
+                ##print "key up", self.count, "self.keys", self.keys
             self.state.get_event(event)
 
 
