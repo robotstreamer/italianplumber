@@ -1,7 +1,28 @@
-Super Mario Bros Level 1 from justinmeister adapted to run on robotstreamer.com
+
+Super Mario Bros Level 1 from justinmeister adapted to run on robotstreamer.com by rgiuly
+
+
+
+This game is an example of how to interface with robotstreamer. It uses websockets to communicate.
+
+
+
+To stream video, which is done with a separate script (using old_send_video in the robostreamer/robotstreamer repo) here's bat file I use in Windows to keep it running:
+
+:loop
+rem python runmyrobot/old_send_video.py 84736686 0 --screen-capture --kbps 250 --audio-input-device "Microphone (HD Webcam C270)"
+python robotstreamer/old_send_video.py 203 0 --screen-capture --kbps 250 --audio-input-device "Microphone (HD Webcam C270)"
+timeout 2
+goto loop
+
+Note: My screen is made available as a camera input to make this work.
+
+
 
 
 =============
+
+Notes on the game:
 
 An attempt to recreate the first level of Super Mario Bros.
 
